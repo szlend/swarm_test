@@ -11,6 +11,13 @@ defmodule SwarmTest.Server do
   end
 
   def process(n) do
+    case Swarm.whereis_name({:swarm_test, n}) do
+      :undefined -> register(n)
+      pid when is_pid(pid) -> pid
+    end
+  end
+
+  def register(n) do
     case Swarm.register_name({:swarm_test, n}, __MODULE__, :start_link, [n]) do
       {:ok, pid} -> pid
       {:error, {:already_registered, pid}} -> pid
@@ -74,7 +81,8 @@ defmodule SwarmTest.Server do
   end
 
   def ping_neighbours(state) do
-    {from, to} = {state.n - div(@max_pings, 2), state.n + div(@max_pings, 2)}
+    from = state.n - div(@max_pings, 2)
+    to = state.n + div(@max_pings, 2)
     pings = for n <- from..to, n != state.n, abs(n) <= @max_depth do
       ping(state.n, n)
     end
